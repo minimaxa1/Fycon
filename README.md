@@ -1,6 +1,6 @@
 # Fycon - Local File Conversion Utility
 
-Fycon is a web-based tool designed for converting various file formats directly on your local machine. It leverages powerful command-line utilities like FFmpeg, ImageMagick, Pandoc, and LibreOffice to handle a wide range of conversions through a simple drag-and-drop interface.
+Fycon is an easy to use gui based tool designed for converting various file formats directly on your local machine. It leverages powerful command-line utilities like FFmpeg, ImageMagick, Pandoc, and LibreOffice to handle a wide range of conversions through a simple drag-and-drop interface.
 
 This project uses a Node.js backend to orchestrate the conversion processes with a minimal HTML/CSS/JavaScript frontend for user interaction.
 
