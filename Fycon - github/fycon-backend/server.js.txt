@@ -1,0 +1,210 @@
+// --- Core Modules ---
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
+const cors = require('cors');
+const mime = require('mime-types');
+const cron = require('node-cron');
+
+// --- Configuration ---
+const app = express();
+const PORT = process.env.PORT || 3000;
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
+const OUTPUT_DIR = path.join(__dirname, 'converted');
+
+// --- Ensure Directories Exist ---
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+// --- Middleware ---
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// --- Multer Configuration ---
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) { cb(null, UPLOAD_DIR); },
+    filename: function (req, file, cb) { const uniqueSuffix = uuidv4(); const extension = path.extname(file.originalname) || ''; cb(null, uniqueSuffix + extension); }
+});
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+
+// --- Conversion Rule Definitions (EXPANDED) ---
+const CONVERSION_RULES = {
+    // --- Images ---
+    'image': {
+        // Added ico
+        validTargets: ['png', 'jpg', 'webp', 'gif', 'bmp', 'tiff', 'ico', 'pdf'], // Added PDF output from image
+        tool: 'magick',
+        getArgs: (input, output, format) => ['convert', input, output], // Simple conversion works for most, including PDF/ICO
+        getOutputExt: (format) => format
+    },
+    // --- Audio ---
+    'audio': {
+        // Added aac, wma, aiff
+        validTargets: ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'aiff'],
+        tool: 'ffmpeg',
+        // Basic args, might need specific codec flags (-c:a libfdk_aac etc.) for optimal quality/compatibility
+        getArgs: (input, output, format) => ['-i', input, '-vn', '-ar', '44100', '-ac', '2', output],
+        getOutputExt: (format) => format
+    },
+    // --- Video ---
+    'video': {
+        // Added mkv, mov, avi, webm outputs
+        validTargets: ['gif-anim', 'mp3-extract', 'mp4-basic', 'mkv', 'mov', 'avi', 'webm'],
+        tool: 'ffmpeg',
+        getArgs: (input, output, format) => {
+            if (format === 'gif-anim') return ['-i', input, '-vf', 'fps=15,scale=480:-1:flags=lanczos', '-loop', '0', output];
+            if (format === 'mp3-extract') return ['-i', input, '-vn', '-q:a', '0', '-map', 'a', output];
+             // Add basic encoding args for new formats (adjust codecs/presets as needed)
+             // Using -c copy attempts to copy streams directly (fast, but might fail if codec isn't compatible)
+             // Using specific codecs like libx264/aac/vp9/opus is more reliable but slower.
+            if (format === 'mp4-basic') return ['-i', input, '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', output];
+            if (format === 'mkv') return ['-i', input, '-c', 'copy', '-map', '0', output]; // Try copy streams first for MKV
+            if (format === 'mov') return ['-i', input, '-c', 'copy', '-map', '0', '-movflags', '+faststart', output]; // Try copy for MOV
+            if (format === 'avi') return ['-i', input, '-c:v', 'libxvid', '-q:v', '4', '-c:a', 'libmp3lame', '-q:a', '4', output]; // Re-encode for AVI compatibility
+            if (format === 'webm') return ['-i', input, '-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', '-c:a', 'libopus', '-b:a', '128k', output]; // VP9/Opus for WebM
+            return [];
+        },
+         getOutputExt: (format) => {
+            if (format === 'gif-anim') return 'gif';
+            if (format === 'mp3-extract') return 'mp3';
+            if (format === 'mp4-basic') return 'mp4';
+            if (format === 'mkv') return 'mkv';
+            if (format === 'mov') return 'mov';
+            if (format === 'avi') return 'avi';
+            if (format === 'webm') return 'webm';
+            return 'unknown';
+        }
+    },
+    // --- Documents ---
+     'application/pdf': {
+        validTargets: ['txt', 'png', 'jpg'], // Keep simple for PDF input
+        tool: (format) => format === 'txt' ? 'pdftotext' : 'magick',
+        getArgs: (input, output, format) => { if (format === 'txt') return [input, output.replace(path.extname(output), '.txt')]; if (['png', 'jpg'].includes(format)) return ['convert', '-density', '150', `${input}[0]`, '-quality', '90', output]; return []; },
+        getOutputExt: (format) => format
+     },
+     // DOCX, ODT, RTF - handled by specific MIME or fallback to this rule
+     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+         validTargets: ['pdf', 'txt', 'html', 'odt', 'rtf', 'md', 'epub'], // Added odt, rtf, md, epub outputs
+         tool: (format) => format === 'md' ? 'pandoc' : 'libreoffice', // Use Pandoc for MD output, LO otherwise
+         getArgs: (input, outputOrDir, format) => {
+             if (format === 'md') { // Pandoc needs output file
+                 return ['-s', input, '--to=markdown-raw_html', '-o', outputOrDir]; // Raw HTML preserves more formatting
+             } else { // LibreOffice
+                 return ['--headless', '--convert-to', format, '--outdir', outputOrDir, input];
+             }
+         },
+         getOutputExt: (format) => format
+     },
+     // Specific ODT Rule (can reuse DOCX logic via findRule fallback)
+     'application/vnd.oasis.opendocument.text': {
+         validTargets: ['pdf', 'txt', 'html', 'docx', 'rtf', 'md', 'epub'], // Added outputs
+         tool: (format) => format === 'md' ? 'pandoc' : 'libreoffice',
+         getArgs: (input, outputOrDir, format) => {
+             if (format === 'md') return ['-s', input, '--to=markdown-raw_html', '-o', outputOrDir];
+             else return ['--headless', '--convert-to', format, '--outdir', outputOrDir, input];
+         },
+         getOutputExt: (format) => format
+     },
+      // Specific RTF Rule
+     'application/rtf': {
+         validTargets: ['pdf', 'txt', 'html', 'docx', 'odt', 'md', 'epub'], // Added outputs
+         tool: (format) => ['md', 'html', 'epub'].includes(format) ? 'pandoc' : 'libreoffice', // Pandoc is often better FROM rtf for some targets
+         getArgs: (input, outputOrDir, format) => {
+             if (['md', 'html', 'epub'].includes(format)) return ['-s', input, '-o', outputOrDir];
+             else return ['--headless', '--convert-to', format, '--outdir', outputOrDir, input];
+         },
+         getOutputExt: (format) => format
+     },
+     'text/plain': {
+         validTargets: ['pdf', 'html', 'md', 'epub'], // Added md, epub outputs
+         tool: 'pandoc',
+         getArgs: (input, output, format) => ['-s', input, '-o', output],
+         getOutputExt: (format) => format
+     },
+      // Specific Markdown Rule (Input)
+     'text/markdown': {
+         validTargets: ['html', 'pdf', 'docx', 'odt', 'rtf', 'epub'],
+         tool: 'pandoc',
+         getArgs: (input, output, format) => ['-s', input, '-o', output], // Basic Pandoc conversion FROM markdown
+         getOutputExt: (format) => format
+     },
+
+    // --- Archive Creation ---
+    'archive-create': {
+        // Added tar, tar.bz2
+        validTargets: ['zip', 'tar.gz', 'tar.bz2', 'tar', '7z'],
+        tool: (format) => {
+            if (format === 'tar.gz' || format === 'tar.bz2' || format === 'tar') return 'tar';
+            if (format === '7z') return '7z';
+            return 'zip'; // Default to zip
+        },
+        getArgs: (input, output, format, originalName) => {
+            const inputFilename = originalName || path.basename(input);
+             // Ensure correct output extension
+             let correctExt = format === 'tar.gz' ? '.tar.gz' : (format === 'tar.bz2' ? '.tar.bz2' : `.${format}`);
+             if (!output.toLowerCase().endsWith(correctExt)) output = path.join(path.dirname(output), path.basename(output, path.extname(output)) + correctExt);
+
+             if (format === 'zip') return ['-j', output, input];
+             if (format === 'tar.gz') return ['-czvf', output, '-C', path.dirname(input), path.basename(input)];
+             if (format === 'tar.bz2') return ['-cjvf', output, '-C', path.dirname(input), path.basename(input)]; // Use -j for bzip2
+             if (format === 'tar') return ['-cvf', output, '-C', path.dirname(input), path.basename(input)]; // Use -c for create, -v verbose, -f file
+             if (format === '7z') return ['a', output, input];
+            return [];
+        },
+        getOutputExt: (format) => format // Already includes full extension like tar.gz
+    }
+};
+
+// --- Helper Function: Find Conversion Rule (Updated Fallbacks) ---
+function findRule(mimeType, targetFormat) {
+    const mainType = mimeType.split('/')[0];
+
+    // Handle archive creation first
+    if (['zip', 'tar.gz', 'tar.bz2', 'tar', '7z'].includes(targetFormat)) {
+        const createRule = CONVERSION_RULES['archive-create'];
+        if (createRule && createRule.validTargets.includes(targetFormat)) return createRule;
+    }
+
+    // Specific MIME types take precedence
+    let rule = CONVERSION_RULES[mimeType];
+
+    // Fallbacks for common variations
+    if (!rule && mimeType === 'text/rtf') rule = CONVERSION_RULES['application/rtf'];
+    if (!rule && mimeType.startsWith('text/markdown')) rule = CONVERSION_RULES['text/markdown']; // Catch variations like text/x-markdown
+
+    // Fallbacks for categories
+    if (!rule && ['image', 'audio', 'video', 'text'].includes(mainType)) rule = CONVERSION_RULES[mainType];
+
+    // Fallback for general documents to the DOCX/LibreOffice rule
+    if (!rule && (mimeType.includes('document') || mimeType.includes('office') || mimeType === 'application/msword')) { // Added msword
+         rule = CONVERSION_RULES['application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    }
+
+    // Final check if the found rule supports the target format
+    if (rule && rule.validTargets.includes(targetFormat)) {
+        return rule;
+    }
+    return null;
+}
+
+
+// --- Helper Function: Handle Process Completion ---
+function handleProcessCompletion(code, outputFilename, stderrOutput, res, outputPathForCleanup = null) { /* ... Same as before ... */ if (code === 0) { console.log(`Conversion successful: ${outputFilename}`); if (!res.headersSent) { const fullSavedPath = path.join(OUTPUT_DIR, outputFilename); console.log(`Reporting success, file at: ${fullSavedPath}`); res.status(200).json({ message: 'Conversion successful!', downloadId: outputFilename, savedPath: fullSavedPath }); } } else { console.error(`Conversion failed with code ${code}. Stderr: ${stderrOutput}`); if (outputPathForCleanup) fs.unlink(outputPathForCleanup, (err) => { if (err && err.code !== 'ENOENT') console.error("Error deleting failed output file:", err); else if (!err) console.log("Cleaned up failed output file:", outputPathForCleanup); }); if (!res.headersSent) res.status(500).json({ error: 'Conversion failed.', details: stderrOutput ? 'Tool reported an error.' : `Process exited with code ${code}. Check server logs.` }); } }
+
+// --- Main Conversion Function ---
+async function processConversion(uploadedFile, targetFormat, res) { /* ... Same as before ... */ console.log(`Starting conversion for ${uploadedFile.originalname} to ${targetFormat}`); const inputPath = uploadedFile.path; let outputPath = ''; let outputFilename = ''; let mimeType = 'unknown'; try { let detectedType = null; try { const { fileTypeFromFile } = await import('file-type'); detectedType = await fileTypeFromFile(inputPath); } catch (importError) { console.error("Error dynamically importing 'file-type', continuing without it:", importError.message); } mimeType = detectedType ? detectedType.mime : (uploadedFile.mimetype || mime.lookup(uploadedFile.originalname) || 'unknown'); console.log(`Using MIME: ${mimeType} (Detected: ${detectedType?.mime}, Original: ${uploadedFile.mimetype})`); if (mimeType === 'unknown') throw new Error('Could not determine the input file type.'); const rule = findRule(mimeType, targetFormat); if (!rule) throw new Error(`Conversion from '${mimeType}' to '${targetFormat}' is not supported.`); console.log(`Using rule for type: ${mimeType}`); const outputExt = rule.getOutputExt(targetFormat); if (!outputExt || outputExt === 'unknown') throw new Error(`Internal error: Invalid output extension for format: ${targetFormat}`); outputFilename = `${uuidv4()}.${outputExt}`; outputPath = path.join(OUTPUT_DIR, outputFilename); const command = typeof rule.tool === 'function' ? rule.tool(targetFormat) : rule.tool; let args; let isLibreOffice = command === 'libreoffice'; if (isLibreOffice) args = rule.getArgs(inputPath, OUTPUT_DIR, targetFormat); else args = rule.getArgs(inputPath, outputPath, targetFormat, uploadedFile.originalname); if (!command || !args || args.length === 0) throw new Error("Internal error: Invalid conversion rule configuration."); console.log(`Executing: ${command} ${args.join(' ')}`); const conversionProcess = spawn(command, args); let stderrOutput = ''; let stdoutOutput = ''; conversionProcess.stdout.on('data', (data) => { stdoutOutput += data.toString(); }); conversionProcess.stderr.on('data', (data) => { stderrOutput += data.toString(); }); await new Promise((resolve, reject) => { conversionProcess.on('close', (code) => { console.log(`stdout: ${stdoutOutput}`); console.error(`stderr: ${stderrOutput}`); console.log(`Conversion process exited with code ${code}`); fs.unlink(inputPath, (err) => { if (err) console.error("Cleanup Error (Original Upload):", err); else console.log("Cleaned up original upload:", inputPath); }); if (isLibreOffice && code === 0) { const baseInputName = path.basename(inputPath, path.extname(inputPath)); const predictedOutputPath = path.join(OUTPUT_DIR, `${baseInputName}.${outputExt}`); const finalUuidPath = outputPath; fs.rename(predictedOutputPath, finalUuidPath, (renameErr) => { if (renameErr) { console.error(`Error renaming LO output from ${predictedOutputPath} to ${finalUuidPath}:`, renameErr); handleProcessCompletion(code, outputFilename, `Rename Warning: ${renameErr.message}. ${stderrOutput}`, res); } else { console.log("Renamed LO output to:", finalUuidPath); handleProcessCompletion(code, outputFilename, stderrOutput, res); } resolve(); }); } else { handleProcessCompletion(code, outputFilename, stderrOutput, res, code !== 0 ? outputPath : null); resolve(); } }); conversionProcess.on('error', (spawnError) => { console.error(`Failed to start subprocess '${command}'. Is it installed/PATH?`, spawnError); fs.unlink(inputPath, (unlinkErr) => { if (unlinkErr) console.error("Cleanup Error (Spawn Error):", unlinkErr); }); if (!res.headersSent) res.status(500).json({ error: `Server error: Failed to start conversion tool ('${command}').` }); reject(spawnError); }); }); } catch (error) { console.error("Error during conversion process:", error.message); fs.unlink(inputPath, (err) => { if (err) console.error("Cleanup Error (Catch Block - Input):", err); }); if (outputPath) fs.unlink(outputPath, (err) => { if (err && err.code !== 'ENOENT') console.error("Cleanup Error (Catch Block - Output):", err); }); if (!res.headersSent) { const isKnownError = error.message.includes('Conversion from') || error.message.includes('determine the input file type'); res.status(isKnownError ? 400 : 500).json({ error: isKnownError ? error.message : 'An unexpected server error occurred.' }); } } }
+
+// --- ROUTES ---
+app.get('/', (req, res) => res.send('Fycon Backend is Running!'));
+app.post('/convert', upload.single('inputFile'), (req, res) => { if (!req.file) return res.status(400).json({ error: 'No file uploaded.' }); const targetFormat = req.body.targetFormat; if (!targetFormat) { fs.unlink(req.file.path, (err) => { if (err) console.error("Error deleting orphaned upload:", err);}); return res.status(400).json({ error: 'No target format specified.' }); } processConversion(req.file, targetFormat, res); });
+app.get('/download/:fileId', (req, res) => { /* ... Same download logic ... */ const fileId = req.params.fileId; console.log(`Download request received for fileId: ${fileId}`); const safePattern = /^[a-zA-Z0-9\-.]+$/; if (!fileId || !safePattern.test(fileId)) return res.status(400).json({ error: 'Invalid file identifier.' }); const filePath = path.join(OUTPUT_DIR, fileId); console.log(`Attempting to serve file from path: ${filePath}`); fs.access(filePath, fs.constants.R_OK, (err) => { if (err) { console.error(`Error accessing file for download: ${filePath}`, err); return res.status(err.code === 'ENOENT' ? 404 : 500).json({ error: err.code === 'ENOENT' ? 'File not found or expired.' : 'Server error accessing file.' }); } res.download(filePath, fileId, (downloadErr) => { if (downloadErr) console.error(`Error during file download stream for ${fileId}:`, downloadErr); else console.log(`Successfully sent file ${fileId} for download.`); /* Immediate deletion removed */ }); }); });
+
+// --- Scheduled Cleanup Task ---
+cron.schedule('0 */6 * * *', () => { /* ... Same cleanup logic ... */ console.log('[Cron] Running scheduled cleanup task...'); const now = Date.now(); const maxAge = 6 * 60 * 60 * 1000; const cleanupDirectory = (directory) => { fs.readdir(directory, { withFileTypes: true }, (err, files) => { if (err) { console.error(`[Cron] Error reading directory: ${directory}`, err); return; } files.forEach(file => { if (!file.isFile()) return; const filePath = path.join(directory, file.name); fs.stat(filePath, (statErr, stats) => { if (statErr) { if(statErr.code !== 'ENOENT') console.error(`[Cron] Error getting stats: ${filePath}`, statErr); return; } if (now - stats.mtimeMs > maxAge) { console.log(`[Cron] Deleting old file: ${filePath}`); fs.unlink(filePath, (unlinkErr) => { if (unlinkErr && unlinkErr.code !== 'ENOENT') console.error(`[Cron] Error deleting: ${filePath}`, unlinkErr); }); } }); }); }); }; cleanupDirectory(UPLOAD_DIR); cleanupDirectory(OUTPUT_DIR); });
+
+// --- Start Server ---
+app.listen(PORT, () => { console.log(`Fycon backend listening on http://localhost:${PORT}`); console.log(`Uploads directory: ${UPLOAD_DIR}`); console.log(`Converted files directory: ${OUTPUT_DIR}`); });
