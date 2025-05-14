@@ -6,7 +6,8 @@ This project uses a Node.js backend to orchestrate the conversion processes with
 
 **(Important Note: This application processes files locally on the machine where the backend server is running. It is primarily intended for local development or personal use on a trusted machine. Do not expose the backend server directly to the internet without proper security considerations.)**
 
-![fycon](https://github.com/user-attachments/assets/6672a79e-5db3-4042-978b-63885bbc0f85)
+![fycon image](https://github.com/user-attachments/assets/7a919231-79c7-43a9-9859-78d6d2214588)
+
 
 
 ## Features
@@ -240,7 +241,7 @@ Before you can run Fycon, you **MUST** have the following installed on the machi
 ## Limitations / Important Notes
 
 *   **Local Processing Only:** Performance depends on the server machine.
-*   **Single File Only (Currently):** Multi-file uploads require modification.
+*   Multi-file Max 20 files. 
 *   **Security:** Designed for local use. Review security if exposing publicly. External tools may have their own vulnerabilities.
 *   **External Tool Dependency:** Functionality relies on correct installation and PATH configuration of prerequisite tools.
 *   **Resource Intensive:** Conversions can use significant CPU/RAM.
