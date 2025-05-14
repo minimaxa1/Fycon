@@ -5,66 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>fycon - Sharp File Converter</title>
 
-    <!-- Google Fonts Link -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <!-- CSS Styles Embedded -->
     <style>
-        /* Basic Reset & Font */
+        /* ... (CSS styles remain identical to the previous version you confirmed worked, including the success message color and button layout) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
         body { font-family: 'Inter', sans-serif; background: radial-gradient(ellipse at bottom, #1c1e22, #111214); color: #e0e0e0; display: flex; justify-content: center; align-items: center; padding: 0; min-height: 100vh; position: relative; }
-        /* Particle Canvas Styling */
         #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; background: radial-gradient(ellipse at bottom, #1c1e22, #111214); }
-        /* Main App Container */
-        .fycon-app { /* Correct class name */
+        .fycon-app {
             background-color: rgba(30, 32, 38, 0.85);
             backdrop-filter: blur(10px);
             padding: 40px 50px;
             border-radius: 12px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 850px; /* Adjusted width */
+            max-width: 850px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             margin: 20px;
             position: relative;
             z-index: 1;
+            display: flex; /* For centering content if body alignment isn't enough */
+            flex-direction: column; /* Stack children vertically */
+            max-height: 95vh; /* Prevent overflow from pushing it off-screen */
+            overflow-y: auto; /* Allow main container to scroll if content too tall */
         }
-        /* Gradient H1 */
         h1 { background: linear-gradient(to bottom, #33d9ff, #0072ff); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 8px; font-weight: 700; letter-spacing: 1px; font-size: 3em; display: inline-block; }
         .subtitle { color: #a0a0a0; font-size: 1em; margin-bottom: 35px; font-weight: 300; }
-        /* Drop Zone */
-        .drop-zone { border: 2px dashed #00c6ff; border-radius: 10px; padding: 60px 25px; cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; margin-bottom: 30px; position: relative; background-color: rgba(0, 0, 0, 0.1); }
+        .drop-zone { border: 2px dashed #00c6ff; border-radius: 10px; padding: 40px 25px; /* Reduced padding */ cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; margin-bottom: 20px; /* Reduced margin */ position: relative; background-color: rgba(0, 0, 0, 0.1); }
         .drop-zone:hover, .drop-zone.dragover { background-color: rgba(0, 198, 255, 0.05); border-color: #33d9ff; box-shadow: 0 0 15px rgba(0, 198, 255, 0.2); }
-        .drop-zone-text { font-size: 1.5em; font-weight: 500; color: #f0f0f0; margin-bottom: 8px; }
-        .drop-zone-prompt { font-size: 0.9em; color: #a0a0a0; }
+        .drop-zone-text { font-size: 1.3em; font-weight: 500; color: #f0f0f0; margin-bottom: 8px; }
+        .drop-zone-prompt { font-size: 0.8em; color: #a0a0a0; }
         #file-input { display: none; }
-        /* File Info Area */
-        #file-info-area { text-align: left; margin-bottom: 35px; margin-top: 30px; }
-        .file-details { background-color: rgba(0, 0, 0, 0.2); padding: 18px 20px; border-radius: 8px; min-height: 60px; display: flex; align-items: center; flex-wrap: wrap; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .file-details .no-file { color: #888; font-style: italic; width: 100%; text-align: center; font-size: 0.95em; }
-        .file-details .file-name { font-weight: 500; margin-right: 15px; word-break: break-all; flex-grow: 1; color: #e5e5e5; }
-        .file-details .file-size { color: #aaa; font-size: 0.9em; white-space: nowrap; margin-left: auto; padding-left: 15px; }
-        /* Controls Area and Button Categories */
-        #controls-area { margin-top: 40px; }
-        .category-row { margin-bottom: 18px; text-align: left; }
-        .button-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
-        /* Flatter Square Buttons */
-        .convert-button { padding: 9px 11px; min-width: 50px; text-align: center; font-size: 0.75em; font-weight: 600; color: #b0b0b0; background-color: rgba(255, 255, 255, 0.03); border: 1px solid #555; border-radius: 0; cursor: pointer; position: relative; z-index: 1; overflow: hidden; transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; text-transform: uppercase; letter-spacing: 0.8px; }
+        #file-info-area { text-align: left; margin-bottom: 10px; margin-top: 20px; max-height: 150px; /* Adjusted */ overflow-y: auto; padding-right: 10px; }
+        .file-details { background-color: rgba(0, 0, 0, 0.2); padding: 15px 20px; /* Adjusted */ border-radius: 8px; min-height: 50px; /* Adjusted */ display: flex; align-items: center; flex-wrap: wrap; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .file-details .no-file { color: #888; font-style: italic; width: 100%; text-align: center; font-size: 0.9em; }
+        .file-details ul { list-style-type: none; padding-left: 0; width: 100%; }
+        .file-details li { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; /* Adjusted */ border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .file-details li:last-child { border-bottom: none; }
+        .file-details .file-name { font-weight: 500; margin-right: 10px; word-break: break-all; flex-grow: 1; color: #e5e5e5; font-size: 0.85em; }
+        .file-details .file-size { color: #aaa; font-size: 0.8em; white-space: nowrap; margin-left: auto; padding-left: 10px; }
+        .clear-files-button {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #a0a0a0;
+            border: 1px solid #555;
+            padding: 6px 12px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .clear-files-button:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        .clear-files-button:disabled {
+             opacity: 0.5; cursor: not-allowed;
+        }
+        #controls-area { margin-top: 15px; }
+        .category-row { margin-bottom: 15px; text-align: left; }
+        .category-row .category-title { /* Optional: for labelling rows if needed */
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .button-group { display: flex; flex-wrap: wrap; gap: 8px; /* Adjusted */ justify-content: flex-start; }
+        .convert-button { padding: 8px 10px; /* Adjusted */ min-width: 45px; /* Adjusted */ text-align: center; font-size: 0.7em; /* Adjusted */ font-weight: 600; color: #b0b0b0; background-color: rgba(255, 255, 255, 0.03); border: 1px solid #555; border-radius: 0; cursor: pointer; position: relative; z-index: 1; overflow: hidden; transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; text-transform: uppercase; letter-spacing: 0.8px; }
         .convert-button:hover:not(:disabled) { color: #e0e0e0; border-color: #00c6ff; background-color: rgba(0, 198, 255, 0.1); }
         .convert-button:active:not(:disabled) { color: #f0f0f0; border-color: #00a9db; background-color: rgba(0, 150, 200, 0.15); }
         .convert-button:disabled { cursor: not-allowed; color: #666; border-color: #444; background-color: rgba(0, 0, 0, 0.1); opacity: 0.6; }
-        /* Status Area Styling */
-        #status-area { margin-top: 30px; padding: 15px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); min-height: 50px; display: flex; justify-content: center; align-items: center; text-align: center; }
-        #status-area .status-message { font-size: 1em; line-height: 1.5; }
+        #status-area { margin-top: 20px; padding: 10px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); min-height: 40px; max-height: 150px; /* Adjusted */ overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; }
+        #status-area .status-message { font-size: 0.85em; /* Adjusted */ line-height: 1.4; display: block; margin-bottom: 4px; word-break: break-word; }
         #status-area .status-message.error { color: #ff6b6b; font-weight: 500; }
         #status-area .status-message.success { color: #00c6ff; }
-        /* Download Area Styling */
-        #download-area { margin-top: 20px; min-height: 45px; text-align: center; }
-        #download-area a.download-link { display: inline-block; padding: 10px 25px; background: linear-gradient(145deg, #00c6ff, #0072ff); color: #111214; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background 0.3s ease, transform 0.1s ease; }
+        #download-area { margin-top: 15px; min-height: 40px; text-align: left; max-height: 150px; /* Adjusted */ overflow-y: auto;}
+        #download-area a.download-link { display: inline-block; margin: 4px 8px 4px 0; padding: 8px 15px; /* Adjusted */ background: linear-gradient(145deg, #00c6ff, #0072ff); color: #111214; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background 0.3s ease, transform 0.1s ease; font-size: 0.85em; /* Adjusted */ }
         #download-area a.download-link:hover { background: linear-gradient(145deg, #33d9ff, #338dff); transform: translateY(-1px); }
         #download-area a.download-link:active { transform: translateY(0px); }
     </style>
@@ -75,23 +97,22 @@
 
     <div class="fycon-app">
         <h1>Fycon</h1>
-        <p class="subtitle"></p>
+        <p class="subtitle">Multi-File Converter</p>
 
         <div id="drop-zone" class="drop-zone">
-            <p class="drop-zone-text">Single File</p>
+            <p class="drop-zone-text">Select Files</p>
             <p class="drop-zone-prompt">(Drag & Drop or Click)</p>
-            <input type="file" id="file-input" hidden>
+            <input type="file" id="file-input" multiple hidden>
         </div>
 
         <div id="file-info-area">
             <div id="file-details" class="file-details">
-                <span class="no-file">No file selected.</span>
+                <span class="no-file">No files selected.</span>
             </div>
         </div>
+        <button id="clear-files-button" class="clear-files-button" style="display: none;">Clear Selected Files</button>
 
-        <!-- UPDATED Button Layout with ALL New Formats -->
         <div id="controls-area">
-
             <!-- Row 1: Image Formats -->
             <div class="category-row">
                 <div class="button-group">
@@ -101,11 +122,10 @@
                      <button class="convert-button image-target" data-format="gif">GIF</button>
                      <button class="convert-button image-target" data-format="bmp">BMP</button>
                      <button class="convert-button image-target" data-format="tiff">TIFF</button>
-                     <button class="convert-button image-target" data-format="ico">ICO</button> <!-- NEW -->
+                     <button class="convert-button image-target" data-format="ico">ICO</button>
                      <button class="convert-button video-target" data-format="gif-anim">Anim GIF</button>
                 </div>
             </div>
-
             <!-- Row 2: Music / Audio Formats -->
             <div class="category-row">
                 <div class="button-group">
@@ -114,69 +134,329 @@
                     <button class="convert-button audio-target" data-format="ogg">OGG</button>
                     <button class="convert-button video-target" data-format="mp4-basic">MP4</button>
                     <button class="convert-button audio-target" data-format="m4a">M4A</button>
-                    <button class="convert-button audio-target" data-format="aac">AAC</button> <!-- NEW -->
+                    <button class="convert-button audio-target" data-format="aac">AAC</button>
                     <button class="convert-button audio-target" data-format="flac">FLAC</button>
-                    <button class="convert-button audio-target" data-format="aiff">AIFF</button> <!-- NEW -->
-                    <button class="convert-button audio-target" data-format="wma">WMA</button> <!-- NEW -->
+                    <button class="convert-button audio-target" data-format="aiff">AIFF</button>
+                    <button class="convert-button audio-target" data-format="wma">WMA</button>
                     <button class="convert-button video-target" data-format="mp3-extract">Ext MP3</button>
                 </div>
             </div>
-
-            <!-- Row 3: Document / Video / Archive Formats -->
+            <!-- Row 3: Document & Video Formats -->
             <div class="category-row">
                  <div class="button-group">
-                     <!-- Document -->
                      <button class="convert-button doc-target" data-format="pdf">PDF</button>
                      <button class="convert-button doc-target" data-format="txt">TXT</button>
                      <button class="convert-button doc-target" data-format="html">HTML</button>
-                     <button class="convert-button md-target" data-format="md">Markdown</button> <!-- NEW -->
-                     <button class="convert-button doc-target" data-format="epub">EPUB</button> <!-- NEW -->
-                     <!-- Video -->
-                     <button class="convert-button video-target" data-format="mkv">MKV</button> <!-- NEW -->
-                     <button class="convert-button video-target" data-format="mov">MOV</button> <!-- NEW -->
-                     <button class="convert-button video-target" data-format="avi">AVI</button> <!-- NEW -->
-                     <button class="convert-button video-target" data-format="webm">WEBM</button> <!-- NEW -->
-                     <!-- Archive -->
-                     <button class="convert-button archive-target" data-format="zip">ZIP</button>
+                     <button class="convert-button md-target" data-format="md">Markdown</button>
+                     <button class="convert-button doc-target" data-format="epub">EPUB</button>
+                     <button class="convert-button video-target" data-format="mkv">MKV</button>
+                     <button class="convert-button video-target" data-format="mov">MOV</button>
+                     <button class="convert-button video-target" data-format="avi">AVI</button>
+                     <button class="convert-button video-target" data-format="webm">WEBM</button>
+                 </div>
+            </div>
+            <!-- Row 4: Archive Formats (All on one line) -->
+            <div class="category-row">
+                 <div class="button-group">
                      <button class="convert-button archive-target" data-format="tar.gz">TAR.GZ</button>
-                     <button class="convert-button archive-target" data-format="tar.bz2">TAR.BZ2</button> <!-- NEW -->
-                     <button class="convert-button archive-target" data-format="tar">TAR</button> <!-- NEW -->
+                     <button class="convert-button archive-target" data-format="tar.bz2">TAR.BZ2</button>
+                     <button class="convert-button archive-target" data-format="tar">TAR</button>
+                     <button class="convert-button archive-target" data-format="zip">ZIP</button>
                      <button class="convert-button archive-target" data-format="7z">7Z</button>
                  </div>
             </div>
-
         </div> <!-- End controls-area -->
 
-
-         <!-- Status Area -->
          <div id="status-area">
-             <span class="status-message">Select a file and format to convert</span>
+             <span class="status-message">Select file(s) and a format to convert</span>
          </div>
-
-         <!-- Download Area -->
          <div id="download-area">
-             <!-- Download link will appear here -->
+             <!-- Download links will appear here -->
          </div>
-
     </div> <!-- End .fycon-app -->
 
-    <!-- Embedded JavaScript -->
     <script>
-        // --- PARTICLE ANIMATION START ---
-        const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d'); let particles = []; let canvasWidth = window.innerWidth; let canvasHeight = window.innerHeight; function resizeCanvas() { canvasWidth = window.innerWidth; canvasHeight = window.innerHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; } class Particle { constructor(x, y, radius, dx, dy) { this.x = x; this.y = y; this.radius = radius; this.dx = dx; this.dy = dy; this.baseRadius = radius; this.gradient = ctx.createRadialGradient( this.x, this.y, 0, this.x, this.y, this.radius ); this.gradient.addColorStop(0, 'rgba(0, 230, 255, 1.0)'); this.gradient.addColorStop(0.5, 'rgba(0, 198, 255, 0.8)'); this.gradient.addColorStop(1, 'rgba(0, 114, 255, 0.4)'); } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false); ctx.fillStyle = this.gradient; ctx.fill(); ctx.closePath(); } update() { if (this.x + this.radius > canvasWidth || this.x - this.radius < 0) { this.dx = -this.dx; } if (this.y + this.radius > canvasHeight || this.y - this.radius < 0) { this.dy = -this.dy; } this.x += this.dx; this.y += this.dy; this.x = Math.max(this.radius, Math.min(this.x, canvasWidth - this.radius)); this.y = Math.max(this.radius, Math.min(this.y, canvasHeight - this.radius)); this.draw(); } } function initParticles() { particles = []; const numberOfParticles = 100; for (let i = 0; i < numberOfParticles; i++) { const radius = Math.random() * 2.5 + 2.0; const x = Math.random() * (canvasWidth - radius * 2) + radius; const y = Math.random() * (canvasHeight - radius * 2) + radius; const dx = (Math.random() - 0.5) * 1; const dy = (Math.random() - 0.5) * 1; particles.push(new Particle(x, y, radius, dx, dy)); } } function animateParticles() { requestAnimationFrame(animateParticles); ctx.clearRect(0, 0, canvasWidth, canvasHeight); particles.forEach(particle => { particle.update(); }); } window.addEventListener('resize', () => { resizeCanvas(); initParticles(); }); resizeCanvas(); initParticles(); animateParticles();
+        // --- PARTICLE ANIMATION START (Same as previous) ---
+        const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d'); let particles = []; let canvasWidth = window.innerWidth; let canvasHeight = window.innerHeight; function resizeCanvas() { canvasWidth = window.innerWidth; canvasHeight = window.innerHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; } class Particle { constructor(x, y, radius, dx, dy) { this.x = x; this.y = y; this.radius = radius; this.dx = dx; this.dy = dy; this.baseRadius = radius; this.gradient = ctx.createRadialGradient( this.x, this.y, 0, this.x, this.y, this.radius ); this.gradient.addColorStop(0, 'rgba(0, 230, 255, 1.0)'); this.gradient.addColorStop(0.5, 'rgba(0, 198, 255, 0.8)'); this.gradient.addColorStop(1, 'rgba(0, 114, 255, 0.4)'); } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false); ctx.fillStyle = this.gradient; ctx.fill(); ctx.closePath(); } update() { if (this.x + this.radius > canvasWidth || this.x - this.radius < 0) { this.dx = -this.dx; } if (this.y + this.radius > canvasHeight || this.y - this.radius < 0) { this.dy = -this.dy; } this.x += this.dx; this.y += this.dy; this.x = Math.max(this.radius, Math.min(this.x, canvasWidth - this.radius)); this.y = Math.max(this.radius, Math.min(this.y, canvasHeight - this.radius)); this.draw(); } } function initParticles() { particles = []; const numberOfParticles = Math.min(100, Math.floor(window.innerWidth * window.innerHeight / 25000)); /* Adjusted density */ for (let i = 0; i < numberOfParticles; i++) { const radius = Math.random() * 2.0 + 1.5; /* Adjusted size */ const x = Math.random() * (canvasWidth - radius * 2) + radius; const y = Math.random() * (canvasHeight - radius * 2) + radius; const dx = (Math.random() - 0.5) * 0.8; /* Adjusted speed */ const dy = (Math.random() - 0.5) * 0.8; particles.push(new Particle(x, y, radius, dx, dy)); } } function animateParticles() { requestAnimationFrame(animateParticles); ctx.clearRect(0, 0, canvasWidth, canvasHeight); particles.forEach(particle => { particle.update(); }); } window.addEventListener('resize', () => { resizeCanvas(); initParticles(); }); resizeCanvas(); initParticles(); animateParticles();
         // --- PARTICLE ANIMATION END ---
 
         // --- FYCON UI LOGIC START ---
         document.addEventListener('DOMContentLoaded', () => {
-            const dropZone = document.getElementById('drop-zone'); const fileInput = document.getElementById('file-input'); const fileDetailsDiv = document.getElementById('file-details'); const conversionOptionButtons = document.querySelectorAll('.convert-button'); const statusArea = document.getElementById('status-area'); const downloadArea = document.getElementById('download-area'); let currentFile = null;
-            function showStatus(message, isError = false) { if (!isError) { downloadArea.innerHTML = ''; } const cssClass = isError ? 'error' : ''; statusArea.innerHTML = `<span class="status-message ${cssClass}">${message}</span>`; }
-            function showSuccess(message, downloadId) { statusArea.innerHTML = `<span class="status-message success">${message || 'Conversion successful!'}</span>`; const downloadUrl = `http://localhost:3000/download/${downloadId}`; downloadArea.innerHTML = `<a href="${downloadUrl}" class="download-link" target="_blank" download="${downloadId}">Download File</a>`; }
-            function setLoadingState(isLoading) { downloadArea.innerHTML = ''; if (isLoading) { showStatus('Converting, please wait...'); conversionOptionButtons.forEach(btn => btn.disabled = true); } else { updateConversionButtonsState(); } }
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, preventDefaults, false); if (['dragenter', 'dragover', 'drop'].includes(eventName)) { document.body.addEventListener(eventName, preventDefaults, false); } }); ['dragenter', 'dragover'].forEach(eventName => { dropZone.addEventListener(eventName, highlight, false); }); ['dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, unhighlight, false); }); dropZone.addEventListener('drop', handleDrop, false); function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); } function highlight(e) { dropZone.classList.add('dragover'); } function unhighlight(e) { dropZone.classList.remove('dragover'); } function handleDrop(e) { unhighlight(e); const dt = e.dataTransfer; const files = dt.files; if (files.length > 0) { handleFile(files[0]); } else { console.log("No files detected in drop event."); } } dropZone.addEventListener('click', () => { fileInput.click(); }); fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { handleFile(e.target.files[0]); } fileInput.value = null; }); function handleFile(file) { currentFile = file; console.log("File selected:", file); displayFileInfo(currentFile); updateConversionButtonsState(); showStatus('File selected - Choose a format to convert'); } function displayFileInfo(file) { fileDetailsDiv.innerHTML = ''; if (file) { const nameSpan = document.createElement('span'); nameSpan.className = 'file-name'; nameSpan.textContent = file.name; const sizeSpan = document.createElement('span'); sizeSpan.className = 'file-size'; sizeSpan.textContent = `${formatBytes(file.size)}`; fileDetailsDiv.appendChild(nameSpan); fileDetailsDiv.appendChild(sizeSpan); } else { const noFileSpan = document.createElement('span'); noFileSpan.className = 'no-file'; noFileSpan.textContent = 'No file selected.'; fileDetailsDiv.appendChild(noFileSpan); } } function formatBytes(bytes, decimals = 2) { if (!+bytes) return '0 Bytes'; const k = 1024; const dm = decimals < 0 ? 0 : decimals; const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); const sizeIndex = Math.max(0, Math.min(i, sizes.length - 1)); return `${parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(dm))} ${sizes[sizeIndex]}`; } function updateConversionButtonsState() { const hasFile = !!currentFile; conversionOptionButtons.forEach(button => { button.disabled = !hasFile; }); }
-            conversionOptionButtons.forEach(button => { button.addEventListener('click', () => { if (!currentFile) { showStatus('Please select a file first!', true); return; } const targetFormat = button.dataset.format; console.log(`Attempting conversion of '${currentFile.name}' to ${targetFormat.toUpperCase()}`); setLoadingState(true); const formData = new FormData(); formData.append('inputFile', currentFile, currentFile.name); formData.append('targetFormat', targetFormat); fetch('http://localhost:3000/convert', { method: 'POST', body: formData }).then(response => { if (!response.ok) { return response.json().then(errData => { throw new Error(errData.error || `Server responded with status: ${response.status}`); }).catch(parseError => { console.error("Failed to parse error JSON:", parseError); throw new Error(`HTTP error! Status: ${response.status} (${response.statusText})`); }); } return response.json(); }).then(data => { console.log('Conversion Success:', data); showSuccess(data.message, data.downloadId); }).catch(error => { console.error('Conversion Error:', error); showStatus(`Error: ${error.message}`, true); }).finally(() => { setLoadingState(false); }); }); });
-            displayFileInfo(null); updateConversionButtonsState(); showStatus('Select a file and format to convert');
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const fileDetailsDiv = document.getElementById('file-details');
+            const conversionOptionButtons = document.querySelectorAll('.convert-button');
+            const statusArea = document.getElementById('status-area');
+            const downloadArea = document.getElementById('download-area');
+            const clearFilesButton = document.getElementById('clear-files-button');
+
+            let currentFiles = [];
+            const MAX_FILES_FRONTEND = 20;
+            let isConverting = false; // Flag to prevent multiple simultaneous submissions
+
+            function showStatus(message, isError = false, clearPrevious = true) {
+                if (clearPrevious) {
+                    statusArea.innerHTML = '';
+                }
+                // Only clear download area if not an error and it's a general status update
+                if (!isError && clearPrevious) {
+                    downloadArea.innerHTML = '';
+                }
+                const messageSpan = document.createElement('span');
+                messageSpan.className = `status-message ${isError ? 'error' : (message.includes('successful') ? 'success' : '')}`; // Add success class if relevant
+                messageSpan.textContent = message;
+                statusArea.appendChild(messageSpan);
+            }
+
+            function setLoadingState(isLoading) {
+                isConverting = isLoading; // Update the global flag
+                if (isLoading) {
+                    statusArea.innerHTML = ''; // Clear status for loading message
+                    showStatus('Converting, please wait...', false, true); // This also clears download area
+                    conversionOptionButtons.forEach(btn => btn.disabled = true);
+                    clearFilesButton.disabled = true;
+                    fileInput.disabled = true; // Prevent adding more files during conversion
+                    dropZone.style.pointerEvents = 'none'; // Disable drop zone clicks/drops
+                } else {
+                    // Status will be updated by conversion results
+                    updateConversionButtonsState(); // This re-enables buttons based on file selection
+                    fileInput.disabled = false;
+                    dropZone.style.pointerEvents = 'auto';
+                }
+            }
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    preventDefaults(e);
+                    if (isConverting) return; // Prevent interaction if converting
+                    if (['dragenter', 'dragover'].includes(eventName)) highlight(e);
+                    else if (['dragleave', 'drop'].includes(eventName)) unhighlight(e);
+                }, false);
+                if (['dragenter', 'dragover', 'drop'].includes(eventName)) {
+                    document.body.addEventListener(eventName, (e) => {
+                        preventDefaults(e);
+                        if (isConverting && ['dragover', 'drop'].includes(eventName)) { // Prevent dropping anywhere if converting
+                            e.dataTransfer.dropEffect = 'none';
+                        }
+                    }, false);
+                }
+            });
+
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+            function highlight() { if (!isConverting) dropZone.classList.add('dragover'); }
+            function unhighlight() { dropZone.classList.remove('dragover'); }
+
+            dropZone.addEventListener('drop', (e) => {
+                if (isConverting) return;
+                unhighlight(); // Already called in the generic handler, but safe
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    handleFileSelection(Array.from(files));
+                }
+            }, false);
+
+            dropZone.addEventListener('click', () => {
+                if (isConverting) return;
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (isConverting) {
+                    fileInput.value = null; // Clear if trying to add while converting
+                    return;
+                }
+                if (e.target.files.length > 0) {
+                    handleFileSelection(Array.from(e.target.files));
+                }
+                fileInput.value = null; // Reset to allow selecting the same file(s) again
+            });
+
+            function handleFileSelection(filesArray) {
+                if (isConverting) return; // Should be redundant due to input disable, but good check
+
+                let newFiles = [];
+                const filesToAddCount = filesArray.length;
+                let message = "";
+
+                const spaceAvailable = MAX_FILES_FRONTEND - currentFiles.length;
+                if (filesToAddCount > spaceAvailable) {
+                    newFiles = filesArray.slice(0, spaceAvailable);
+                    if (spaceAvailable > 0) {
+                        message = `Added ${spaceAvailable} of ${filesToAddCount} files. Max ${MAX_FILES_FRONTEND} files. `;
+                    } else {
+                        message = `Max ${MAX_FILES_FRONTEND} files reached. No more files added. `;
+                    }
+                } else {
+                    newFiles = filesArray;
+                }
+
+                currentFiles = currentFiles.concat(newFiles);
+                const uniqueFilesMap = new Map();
+                currentFiles.forEach(file => {
+                    const key = `${file.name}_${file.size}_${file.lastModified}`;
+                    if (!uniqueFilesMap.has(key)) {
+                        uniqueFilesMap.set(key, file);
+                    }
+                });
+                const oldLength = currentFiles.length;
+                currentFiles = Array.from(uniqueFilesMap.values());
+
+                if (oldLength > currentFiles.length) {
+                    message += `Removed ${oldLength - currentFiles.length} duplicate(s). `;
+                }
+                
+                if (currentFiles.length > MAX_FILES_FRONTEND) {
+                    currentFiles = currentFiles.slice(0, MAX_FILES_FRONTEND);
+                    message += `Selection trimmed to ${MAX_FILES_FRONTEND} files. `;
+                }
+
+                displayFileInfo(currentFiles);
+                updateConversionButtonsState();
+
+                if (currentFiles.length > 0) {
+                    if (message.trim()) {
+                         showStatus(message.trim() + ` Total: ${currentFiles.length} file(s).`, false, true);
+                    } else if (newFiles.length > 0 || filesToAddCount > 0){ // Only show "selected X files" if new files were added or user attempted to add
+                         showStatus(`Selected ${currentFiles.length} file(s) - Choose format.`, false, true);
+                    }
+                    clearFilesButton.style.display = 'inline-block';
+                } else {
+                    showStatus('Select file(s) and a format to convert.', false, true);
+                    clearFilesButton.style.display = 'none';
+                }
+            }
+
+            function displayFileInfo(files) {
+                fileDetailsDiv.innerHTML = '';
+                if (files && files.length > 0) {
+                    const ul = document.createElement('ul');
+                    files.forEach(file => {
+                        const li = document.createElement('li');
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'file-name';
+                        nameSpan.textContent = file.name;
+                        const sizeSpan = document.createElement('span');
+                        sizeSpan.className = 'file-size';
+                        sizeSpan.textContent = `${formatBytes(file.size)}`;
+                        li.appendChild(nameSpan);
+                        li.appendChild(sizeSpan);
+                        ul.appendChild(li);
+                    });
+                    fileDetailsDiv.appendChild(ul);
+                } else {
+                    const noFileSpan = document.createElement('span');
+                    noFileSpan.className = 'no-file';
+                    noFileSpan.textContent = 'No files selected.';
+                    fileDetailsDiv.appendChild(noFileSpan);
+                }
+            }
+
+            function formatBytes(bytes, decimals = 2) {
+                if (!+bytes) return '0 Bytes';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i] || sizes[0]}`;
+            }
+
+            function updateConversionButtonsState() {
+                const hasFiles = currentFiles && currentFiles.length > 0;
+                conversionOptionButtons.forEach(button => {
+                    button.disabled = !hasFiles || isConverting; // Also disable if converting
+                });
+                clearFilesButton.disabled = !hasFiles || isConverting; // Also disable if converting
+                if(hasFiles) clearFilesButton.style.display = 'inline-block'; else clearFilesButton.style.display = 'none';
+            }
+
+            clearFilesButton.addEventListener('click', () => {
+                if (isConverting) return;
+                currentFiles = [];
+                fileInput.value = null;
+                displayFileInfo(null);
+                updateConversionButtonsState();
+                showStatus('Selection cleared. Select file(s) and format.', false, true);
+                downloadArea.innerHTML = ''; // Also clear downloads
+            });
+
+            conversionOptionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (isConverting) {
+                        console.warn("Conversion already in progress.");
+                        return;
+                    }
+                    if (!currentFiles || currentFiles.length === 0) {
+                        showStatus('Please select at least one file first!', true, true);
+                        return;
+                    }
+                    const targetFormat = button.dataset.format;
+                    console.log(`Attempting conversion of ${currentFiles.length} file(s) to ${targetFormat.toUpperCase()}`);
+                    setLoadingState(true);
+
+                    const formData = new FormData();
+                    currentFiles.forEach(file => {
+                        formData.append('inputFiles', file, file.name);
+                    });
+                    formData.append('targetFormat', targetFormat);
+
+                    fetch('http://localhost:3000/convert', { method: 'POST', body: formData })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json()
+                                    .then(errData => { throw new Error(errData.error || `Server error: ${response.status}`); })
+                                    .catch(() => { throw new Error(`HTTP error! Status: ${response.status} (${response.statusText}). Non-JSON response.`); });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            statusArea.innerHTML = ''; // Clear "Converting..."
+                            downloadArea.innerHTML = ''; // Clear previous download links
+
+                            if (data.allResults && Array.isArray(data.allResults)) {
+                                data.allResults.forEach(result => {
+                                    const messageSpan = document.createElement('span');
+                                    const success = result.success;
+                                    messageSpan.className = `status-message ${success ? 'success' : 'error'}`;
+                                    messageSpan.textContent = `${result.originalName}: ${success ? (result.message || 'Conversion successful!') : `ERROR - ${result.error}`}`;
+                                    statusArea.appendChild(messageSpan);
+
+                                    if (success) {
+                                        const link = document.createElement('a');
+                                        link.href = `http://localhost:3000/download/${result.downloadId}`;
+                                        link.className = 'download-link';
+                                        link.target = '_blank';
+                                        link.download = result.downloadId;
+                                        link.textContent = `Download ${result.originalName} (as ${result.downloadId.split('.').pop()})`;
+                                        downloadArea.appendChild(link);
+                                        // downloadArea.appendChild(document.createElement('br')); // Optional: if you want links on new lines
+                                    }
+                                });
+                                if (data.allResults.length === 0 && currentFiles.length > 0) { // If files were sent but no results
+                                     showStatus('No results returned from server for the processed files.', true, false);
+                                }
+                            } else if (data.error) { // General error from server before batch processing
+                                showStatus(`Server Error: ${data.error}`, true, true);
+                            } else { // Unexpected response
+                                showStatus('Unexpected response format from server.', true, true);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch or Processing Error:', error);
+                            statusArea.innerHTML = ''; // Clear "Converting..."
+                            showStatus(`Error: ${error.message}`, true, true);
+                        })
+                        .finally(() => {
+                            setLoadingState(false);
+                        });
+                });
+            });
+
+            // Initial state
+            displayFileInfo(null);
+            updateConversionButtonsState();
+            showStatus('Select file(s) and a format to convert', false, true);
         });
-        // --- FYCON UI LOGIC END ---
     </script>
 
 </body>
