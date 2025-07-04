@@ -1,4 +1,4 @@
-# Fycon - Local File Conversion Utility
+# Fycon - Local Multi-File Conversion Utility
 
 Fycon is an easy to use gui based tool designed for converting various file formats directly on your local machine. It leverages powerful command-line utilities like FFmpeg, ImageMagick, Pandoc, and LibreOffice to handle a wide range of conversions through a simple drag-and-drop interface.
 
