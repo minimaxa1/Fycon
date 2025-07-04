@@ -241,7 +241,7 @@ Before you can run Fycon, you **MUST** have the following installed on the machi
 ## Limitations / Important Notes
 
 *   **Local Processing Only:** Performance depends on the server machine.
-*   Multi-file Max 20 files. 
+*   Multi-file Max 200 files. 
 *   **Security:** Designed for local use. Review security if exposing publicly. External tools may have their own vulnerabilities.
 *   **External Tool Dependency:** Functionality relies on correct installation and PATH configuration of prerequisite tools.
 *   **Resource Intensive:** Conversions can use significant CPU/RAM.
