@@ -49,7 +49,7 @@
         .file-details .file-name { font-weight: 500; margin-right: 10px; word-break: break-all; flex-grow: 1; color: #e5e5e5; font-size: 0.85em; }
         .file-details .file-size { color: #aaa; font-size: 0.8em; white-space: nowrap; margin-left: auto; padding-left: 10px; }
         .clear-files-button {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 0.05);
             color: #a0a0a0;
             border: 1px solid #555;
             padding: 6px 12px;
@@ -149,6 +149,7 @@
                      <button class="convert-button doc-target" data-format="html">HTML</button>
                      <button class="convert-button md-target" data-format="md">Markdown</button>
                      <button class="convert-button doc-target" data-format="epub">EPUB</button>
+                     <button class="convert-button doc-target" data-format="mobi">MOBI</button> <!-- THIS BUTTON WAS ADDED -->
                      <button class="convert-button video-target" data-format="mkv">MKV</button>
                      <button class="convert-button video-target" data-format="mov">MOV</button>
                      <button class="convert-button video-target" data-format="avi">AVI</button>
@@ -177,10 +178,10 @@
 
     <script>
         // --- PARTICLE ANIMATION START (Same as previous) ---
-        const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d'); let particles = []; let canvasWidth = window.innerWidth; let canvasHeight = window.innerHeight; function resizeCanvas() { canvasWidth = window.innerWidth; canvasHeight = window.innerHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; } class Particle { constructor(x, y, radius, dx, dy) { this.x = x; this.y = y; this.radius = radius; this.dx = dx; this.dy = dy; this.baseRadius = radius; this.gradient = ctx.createRadialGradient( this.x, this.y, 0, this.x, this.y, this.radius ); this.gradient.addColorStop(0, 'rgba(0, 230, 255, 1.0)'); this.gradient.addColorStop(0.5, 'rgba(0, 198, 255, 0.8)'); this.gradient.addColorStop(1, 'rgba(0, 114, 255, 0.4)'); } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false); ctx.fillStyle = this.gradient; ctx.fill(); ctx.closePath(); } update() { if (this.x + this.radius > canvasWidth || this.x - this.radius < 0) { this.dx = -this.dx; } if (this.y + this.radius > canvasHeight || this.y - this.radius < 0) { this.dy = -this.dy; } this.x += this.dx; this.y += this.dy; this.x = Math.max(this.radius, Math.min(this.x, canvasWidth - this.radius)); this.y = Math.max(this.radius, Math.min(this.y, canvasHeight - this.radius)); this.draw(); } } function initParticles() { particles = []; const numberOfParticles = Math.min(100, Math.floor(window.innerWidth * window.innerHeight / 25000)); /* Adjusted density */ for (let i = 0; i < numberOfParticles; i++) { const radius = Math.random() * 2.0 + 1.5; /* Adjusted size */ const x = Math.random() * (canvasWidth - radius * 2) + radius; const y = Math.random() * (canvasHeight - radius * 2) + radius; const dx = (Math.random() - 0.5) * 0.8; /* Adjusted speed */ const dy = (Math.random() - 0.5) * 0.8; particles.push(new Particle(x, y, radius, dx, dy)); } } function animateParticles() { requestAnimationFrame(animateParticles); ctx.clearRect(0, 0, canvasWidth, canvasHeight); particles.forEach(particle => { particle.update(); }); } window.addEventListener('resize', () => { resizeCanvas(); initParticles(); }); resizeCanvas(); initParticles(); animateParticles();
+        const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d'); let particles = []; let canvasWidth = window.innerWidth; let canvasHeight = window.innerHeight; function resizeCanvas() { canvasWidth = window.innerWidth; canvasHeight = window.innerHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; } class Particle { constructor(x, y, radius, dx, dy) { this.x = x; this.y = y; this.radius = radius; this.baseRadius = radius; this.gradient = ctx.createRadialGradient( this.x, this.y, 0, this.x, this.y, this.radius ); this.gradient.addColorStop(0, 'rgba(0, 230, 255, 1.0)'); this.gradient.addColorStop(0.5, 'rgba(0, 198, 255, 0.8)'); this.gradient.addColorStop(1, 'rgba(0, 114, 255, 0.4)'); } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false); ctx.fillStyle = this.gradient; ctx.fill(); ctx.closePath(); } update() { if (this.x + this.radius > canvasWidth || this.x - this.radius < 0) { this.dx = -this.dx; } if (this.y + this.radius > canvasHeight || this.y - this.radius < 0) { this.dy = -this.dy; } this.x += this.dx; this.y += this.dy; this.x = Math.max(this.radius, Math.min(this.x, canvasWidth - this.radius)); this.y = Math.max(this.radius, Math.min(this.y, canvasHeight - this.radius)); this.draw(); } } function initParticles() { particles = []; const numberOfParticles = Math.min(100, Math.floor(window.innerWidth * window.innerHeight / 25000)); /* Adjusted density */ for (let i = 0; i < numberOfParticles; i++) { const radius = Math.random() * 2.0 + 1.5; /* Adjusted size */ const x = Math.random() * (canvasWidth - radius * 2) + radius; const y = Math.random() * (canvasHeight - radius * 2) + radius; const dx = (Math.random() - 0.5) * 0.8; /* Adjusted speed */ const dy = (Math.random() - 0.5) * 0.8; particles.push(new Particle(x, y, radius, dx, dy)); } } function animateParticles() { requestAnimationFrame(animateParticles); ctx.clearRect(0, 0, canvasWidth, canvasHeight); particles.forEach(particle => { particle.update(); }); } window.addEventListener('resize', () => { resizeCanvas(); initParticles(); }); resizeCanvas(); initParticles(); animateParticles();
         // --- PARTICLE ANIMATION END ---
 
-        // --- FYCON UI LOGIC START ---
+        // --- FYCON UI LOGIC START (Identical to your provided script) ---
         document.addEventListener('DOMContentLoaded', () => {
             const dropZone = document.getElementById('drop-zone');
             const fileInput = document.getElementById('file-input');
@@ -191,7 +192,7 @@
             const clearFilesButton = document.getElementById('clear-files-button');
 
             let currentFiles = [];
-            const MAX_FILES_FRONTEND = 20;
+            const MAX_FILES_FRONTEND = 200;
             let isConverting = false; // Flag to prevent multiple simultaneous submissions
 
             function showStatus(message, isError = false, clearPrevious = true) {
@@ -426,8 +427,9 @@
                                         link.href = `http://localhost:3000/download/${result.downloadId}`;
                                         link.className = 'download-link';
                                         link.target = '_blank';
-                                        link.download = result.downloadId;
-                                        link.textContent = `Download ${result.originalName} (as ${result.downloadId.split('.').pop()})`;
+                                        // The 'download' attribute suggests the filename to the browser
+                                        link.download = result.originalName; // Use the original filename
+                                        link.textContent = `Download ${result.originalName}`; // Display original name
                                         downloadArea.appendChild(link);
                                         // downloadArea.appendChild(document.createElement('br')); // Optional: if you want links on new lines
                                     }
